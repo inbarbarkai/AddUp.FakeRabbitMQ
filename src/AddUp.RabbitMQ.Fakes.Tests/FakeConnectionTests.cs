@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FluentAssertions;
 using Xunit;
@@ -58,7 +59,7 @@ namespace AddUp.RabbitMQ.Fakes
             var connection = new FakeConnection(new RabbitServer());
 
             // Act
-            connection.Close(timeout: 2);
+            connection.Close(timeout: TimeSpan.FromMilliseconds(2));
 
             // Assert
             Assert.False(connection.IsOpen);
@@ -87,7 +88,7 @@ namespace AddUp.RabbitMQ.Fakes
             var connection = new FakeConnection(new RabbitServer());
 
             // Act
-            connection.Close(reasonCode: 3, reasonText: "foo", timeout: 4);
+            connection.Close(reasonCode: 3, reasonText: "foo", timeout: TimeSpan.FromMilliseconds(4));
 
             // Assert
             Assert.False(connection.IsOpen);
@@ -131,7 +132,7 @@ namespace AddUp.RabbitMQ.Fakes
             var connection = new FakeConnection(new RabbitServer());
 
             // Act
-            connection.Abort(timeout: 2);
+            connection.Abort(timeout: TimeSpan.FromMilliseconds(2));
 
             // Assert
             Assert.False(connection.IsOpen);
@@ -160,7 +161,7 @@ namespace AddUp.RabbitMQ.Fakes
             var connection = new FakeConnection(new RabbitServer());
 
             // Act
-            connection.Abort(reasonCode: 3, reasonText: "foo", timeout: 4);
+            connection.Abort(reasonCode: 3, reasonText: "foo", timeout: TimeSpan.FromMilliseconds(4));
 
             // Assert
             Assert.False(connection.IsOpen);

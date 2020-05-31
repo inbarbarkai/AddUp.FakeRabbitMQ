@@ -28,22 +28,22 @@ namespace AddUp.RabbitMQ.Fakes
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ChannelFlow_SetsIfTheChannelIsActive(bool value)
-        {
-            // Arrange
-            var node = new RabbitServer();
-            using (var model = new FakeModel(node))
-            {
-                // Act
-                model.ChannelFlow(value);
+        ////[Theory]
+        ////[InlineData(true)]
+        ////[InlineData(false)]
+        ////public void ChannelFlow_SetsIfTheChannelIsActive(bool value)
+        ////{
+        ////    // Arrange
+        ////    var node = new RabbitServer();
+        ////    using (var model = new FakeModel(node))
+        ////    {
+        ////        // Act
+        ////        model.ChannelFlow(value);
 
-                // Assert
-                Assert.Equal(value, model.IsChannelFlowActive);
-            }
-        }
+        ////        // Assert
+        ////        Assert.Equal(value, model.IsChannelFlowActive);
+        ////    }
+        ////}
 
         [Fact]
         public void ExchangeDeclare_AllArguments_CreatesExchange()
@@ -590,7 +590,7 @@ namespace AddUp.RabbitMQ.Fakes
                 var encodedMessage = Encoding.ASCII.GetBytes(message);
 
                 // Act
-                model.BasicPublish("my_exchange", null, new BasicProperties(), encodedMessage);
+                model.BasicPublish("my_exchange", null, new FakeBasicProperties(), encodedMessage);
 
                 // Assert
                 Assert.Single(node.Queues["my_queue"].Messages);
@@ -610,7 +610,7 @@ namespace AddUp.RabbitMQ.Fakes
 
                 var message = "hello world!";
                 var encodedMessage = Encoding.ASCII.GetBytes(message);
-                model.BasicPublish("my_exchange", null, new BasicProperties(), encodedMessage);
+                model.BasicPublish("my_exchange", null, new FakeBasicProperties(), encodedMessage);
                 model.BasicConsume("my_queue", false, new EventingBasicConsumer(model));
 
                 // Act
@@ -635,13 +635,13 @@ namespace AddUp.RabbitMQ.Fakes
 
                 var message = "hello world!";
                 var encodedMessage = Encoding.ASCII.GetBytes(message);
-                model.BasicPublish("my_exchange", null, new BasicProperties(), encodedMessage);
+                model.BasicPublish("my_exchange", null, new FakeBasicProperties(), encodedMessage);
 
                 // Act
                 var response = model.BasicGet("my_queue", false);
 
                 // Assert
-                Assert.Equal(encodedMessage, response.Body);
+                Assert.Equal(encodedMessage, response.Body.ToArray());
                 Assert.True(response.DeliveryTag > 0ul);
             }
         }
@@ -692,7 +692,7 @@ namespace AddUp.RabbitMQ.Fakes
                 model.ExchangeBind("my_queue", "my_exchange", null);
 
                 var encodedMessage = Encoding.ASCII.GetBytes("hello world!");
-                model.BasicPublish("my_exchange", null, new BasicProperties(), encodedMessage);
+                model.BasicPublish("my_exchange", null, new FakeBasicProperties(), encodedMessage);
                 model.BasicConsume("my_queue", false, new EventingBasicConsumer(model));
 
                 // act
@@ -719,7 +719,7 @@ namespace AddUp.RabbitMQ.Fakes
                 model.ExchangeBind("my_queue", "my_exchange", null);
 
                 var encodedMessage = Encoding.ASCII.GetBytes("hello world!");
-                model.BasicPublish("my_exchange", null, new BasicProperties(), encodedMessage);
+                model.BasicPublish("my_exchange", null, new FakeBasicProperties(), encodedMessage);
 
                 // act
                 _ = model.BasicGet("my_queue", autoAck);

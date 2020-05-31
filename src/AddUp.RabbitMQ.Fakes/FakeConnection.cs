@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
@@ -21,35 +22,27 @@ namespace AddUp.RabbitMQ.Fakes
 
 #pragma warning disable 67
         public event EventHandler<CallbackExceptionEventArgs> CallbackException;
-        public event EventHandler<EventArgs> RecoverySucceeded;
-        public event EventHandler<ConnectionRecoveryErrorEventArgs> ConnectionRecoveryError;
         public event EventHandler<ConnectionBlockedEventArgs> ConnectionBlocked;
         public event EventHandler<ShutdownEventArgs> ConnectionShutdown;
         public event EventHandler<EventArgs> ConnectionUnblocked;
 #pragma warning restore 67
 
         public string ClientProvidedName { get; }
-        public List<FakeModel> Models { get; private set; }
-        public EndPoint LocalEndPoint { get; set; }
-        public EndPoint RemoteEndPoint { get; set; }
         public int LocalPort { get; set; }
         public int RemotePort { get; set; }
         public AmqpTcpEndpoint Endpoint { get; set; }
         public IProtocol Protocol { get; set; }
-        public ConsumerWorkService ConsumerWorkService { get; }
         public ushort ChannelMax { get; set; }
         public uint FrameMax { get; set; }
-        public ushort Heartbeat { get; set; }
-                
+        public TimeSpan Heartbeat { get; set; }
         public AmqpTcpEndpoint[] KnownHosts { get; set; }
-        
         public ShutdownEventArgs CloseReason { get; private set; }
         public bool IsOpen => CloseReason == null;
-        public bool AutoClose { get; set; }
-
-        public IDictionary<string, object> ServerProperties { get; } = new Dictionary<string, object>();
-        public IList<ShutdownReportEntry> ShutdownReport { get; set; } = new List<ShutdownReportEntry>();
         public IDictionary<string, object> ClientProperties { get; } = new Dictionary<string, object>();
+        public IDictionary<string, object> ServerProperties { get; } = new Dictionary<string, object>();
+        public IList<ShutdownReportEntry> ShutdownReport { get; } = new List<ShutdownReportEntry>();
+
+        internal List<FakeModel> Models { get; } // Not part of the interface
 
         public void Dispose()
         {
@@ -60,25 +53,40 @@ namespace AddUp.RabbitMQ.Fakes
         {
             var model = new FakeModel(server);
             Models.Add(model);
-
             return model;
         }
 
         // Close and Abort (implementation inspired by RabbitMQ.Client)
 
-        public void Abort() => Abort(-1);
-        public void Abort(int timeout) => Abort(200, "Connection close forced", timeout);
-        public void Abort(ushort reasonCode, string reasonText) => Abort(reasonCode, reasonText, -1);
-        public void Abort(ushort reasonCode, string reasonText, int timeout) =>
+        public void Abort() => Abort(Timeout.InfiniteTimeSpan);
+        public void Abort(ushort reasonCode, string reasonText) => Abort(reasonCode, reasonText, Timeout.InfiniteTimeSpan);
+        public void Abort(TimeSpan timeout) => Abort(200, "Connection close forced", timeout);
+        public void Abort(ushort reasonCode, string reasonText, TimeSpan timeout) =>
             Close(new ShutdownEventArgs(ShutdownInitiator.Application, reasonCode, reasonText), abort: true, timeout);
 
-        public void Close() => Close(200, "Goodbye", -1);
-        public void Close(int timeout) => Close(200, "Goodbye", timeout);
-        public void Close(ushort reasonCode, string reasonText) => Close(reasonCode, reasonText, -1);
-        public void Close(ushort reasonCode, string reasonText, int timeout) =>
+        public void Close() => Close(Timeout.InfiniteTimeSpan);
+        public void Close(ushort reasonCode, string reasonText) => Close(reasonCode, reasonText, Timeout.InfiniteTimeSpan);
+        public void Close(TimeSpan timeout) => Close(200, "Goodbye", timeout);
+        public void Close(ushort reasonCode, string reasonText, TimeSpan timeout) =>
             Close(new ShutdownEventArgs(ShutdownInitiator.Application, reasonCode, reasonText), abort: false, timeout);
 
-        private void Close(ShutdownEventArgs reason, bool abort, int timeout)
+        public void HandleConnectionBlocked(string reason)
+        {
+            // Fake implementation. Nothing to do here.
+        }
+
+        public void HandleConnectionUnblocked()
+        {
+            // Fake implementation. Nothing to do here.
+        }
+
+        public void UpdateSecret(string newSecret, string reason)
+        {
+            // Fake implementation. Nothing to do here.
+        }
+
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Matches the original implementation")]
+        private void Close(ShutdownEventArgs reason, bool abort, TimeSpan timeout)
         {
             try
             {
@@ -100,16 +108,6 @@ namespace AddUp.RabbitMQ.Fakes
             {
                 if (!abort) throw;
             }
-        }
-
-        public void HandleConnectionBlocked(string reason)
-        {
-            // Fake implementation. Nothing to do here.
-        }
-
-        public void HandleConnectionUnblocked()
-        {
-            // Fake implementation. Nothing to do here.
         }
     }
 }
