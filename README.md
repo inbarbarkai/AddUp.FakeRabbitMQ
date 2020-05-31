@@ -19,11 +19,18 @@
 
 ## History
 
-### [Version 1.2.1 - 2020/05/30](https://github.com/addupsolutions/AddUp.RabbitMQ.Fakes/releases/tag/v1.2.1)
+### [2.0.0](https://github.com/addupsolutions/AddUp.RabbitMQ.Fakes/releases/tag/v2.0.0) - 2020/xx/xx
 
-* Updated to **RabbitMQ.Client** to version [5.2.0](https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/master/CHANGELOG.md#changes-between-512-and-520)
+**Beware: The new version of RabbitMQ.Client is breaking. Therefore so is also this version of AddUp.RabbitMQ.Fakes.**
 
-### [Version 1.2.0 - 2019/12/11](https://github.com/addupsolutions/AddUp.RabbitMQ.Fakes/releases/tag/v1.2.0)
+* Updated **RabbitMQ.Client** to version [6.0.0](https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/master/CHANGELOG.md#changes-between-520-and-600) (see issue #7)
+
+
+### [1.2.1](https://github.com/addupsolutions/AddUp.RabbitMQ.Fakes/releases/tag/v1.2.1) - 2020/05/30
+
+* Updated **RabbitMQ.Client** to version [5.2.0](https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/master/CHANGELOG.md#changes-between-512-and-520)
+
+### [1.2.0](https://github.com/addupsolutions/AddUp.RabbitMQ.Fakes/releases/tag/v1.2.0) - 2019/12/11
 
 * First released version of **AddUp.RabbitMQ.Fakes**. Based on [RabbitMQ.Client version 5.1.2](https://www.nuget.org/packages/RabbitMQ.Client/5.1.2)
 * _NB: the version starts at 1.2.0 so as not to collide with previous internal versions._

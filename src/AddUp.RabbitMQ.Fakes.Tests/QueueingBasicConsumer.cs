@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using RabbitMQ.Client;
@@ -11,6 +13,7 @@ namespace AddUp.RabbitMQ.Fakes
     // SharedQueue was copied from https://github.com/rabbitmq/rabbitmq-dotnet-client/blob/master/projects/RabbitMQ.Client/util/SharedQueue.cs
     // QueueingBasicConsumer from RabbitMQ.Client v5.2.0
 
+    [ExcludeFromCodeCoverage]
     internal class QueueingBasicConsumer : DefaultBasicConsumer
     {
         public QueueingBasicConsumer() : this(null) { }
@@ -42,85 +45,32 @@ namespace AddUp.RabbitMQ.Fakes
         }
     }
 
+    [ExcludeFromCodeCoverage]
     internal sealed class SharedQueue<T> : IEnumerable<T>
     {
-        private struct SharedQueueEnumerator<T> : IEnumerator<T>
-        {
-            private readonly SharedQueue<T> _queue;
-            private T _current;
-
-            ///<summary>Construct an enumerator for the given
-            ///SharedQueue.</summary>
-            public SharedQueueEnumerator(SharedQueue<T> queue)
-            {
-                _queue = queue;
-                _current = default;
-            }
-
-            object System.Collections.IEnumerator.Current
-            {
-                get
-                {
-                    if (_current == null)
-                        throw new InvalidOperationException();
-                    return _current;
-                }
-            }
-
-            T IEnumerator<T>.Current
-            {
-                get
-                {
-                    if (_current == null)
-                        throw new InvalidOperationException();
-                    return _current;
-                }
-            }
-
-            public void Dispose()
-            {
-                // Nothing to do here...
-            }
-
-            bool System.Collections.IEnumerator.MoveNext()
-            {
-                try
-                {
-                    _current = _queue.Dequeue();
-                    return true;
-                }
-                catch (EndOfStreamException)
-                {
-                    _current = default;
-                    return false;
-                }
-            }
-
-            void System.Collections.IEnumerator.Reset() => throw new InvalidOperationException("SharedQueue.Reset() does not make sense");
-        }
-
-        protected bool m_isOpen = true;
-        protected Queue<T> m_queue = new Queue<T>();
+        private readonly Queue<T> queue = new Queue<T>();
+        private bool isOpen = true;
 
         public void Close()
         {
-            lock (m_queue)
+            lock (queue)
             {
-                m_isOpen = false;
-                Monitor.PulseAll(m_queue);
+                isOpen = false;
+                Monitor.PulseAll(queue);
             }
         }
 
         public T Dequeue()
         {
-            lock (m_queue)
+            lock (queue)
             {
-                while (m_queue.Count == 0)
+                while (queue.Count == 0)
                 {
                     EnsureIsOpen();
-                    Monitor.Wait(m_queue);
+                    Monitor.Wait(queue);
                 }
-                return m_queue.Dequeue();
+
+                return queue.Dequeue();
             }
         }
 
@@ -133,9 +83,9 @@ namespace AddUp.RabbitMQ.Fakes
             }
 
             var startTime = DateTime.Now;
-            lock (m_queue)
+            lock (queue)
             {
-                while (m_queue.Count == 0)
+                while (queue.Count == 0)
                 {
                     EnsureIsOpen();
                     var elapsedTime = DateTime.Now.Subtract(startTime);
@@ -146,47 +96,92 @@ namespace AddUp.RabbitMQ.Fakes
                         return false;
                     }
 
-                    Monitor.Wait(m_queue, remainingTime);
+                    Monitor.Wait(queue, remainingTime);
                 }
 
-                result = m_queue.Dequeue();
+                result = queue.Dequeue();
                 return true;
             }
         }
 
         public T DequeueNoWait(T defaultValue)
         {
-            lock (m_queue)
+            lock (queue)
             {
-                if (m_queue.Count == 0)
+                if (queue.Count == 0)
                 {
                     EnsureIsOpen();
                     return defaultValue;
                 }
-                else
-                {
-                    return m_queue.Dequeue();
-                }
+
+                return queue.Dequeue();
             }
         }
 
         public void Enqueue(T o)
         {
-            lock (m_queue)
+            lock (queue)
             {
                 EnsureIsOpen();
-                m_queue.Enqueue(o);
-                Monitor.Pulse(m_queue);
+                queue.Enqueue(o);
+                Monitor.Pulse(queue);
             }
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => new SharedQueueEnumerator<T>(this);
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => new SharedQueueEnumerator<T>(this);
+        public IEnumerator<T> GetEnumerator() => new SharedQueueEnumerator<T>(this);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         private void EnsureIsOpen()
         {
-            if (!m_isOpen)
+            if (!isOpen)
                 throw new EndOfStreamException("SharedQueue closed");
         }
+    }
+
+    [ExcludeFromCodeCoverage]
+    internal struct SharedQueueEnumerator<T> : IEnumerator<T>
+    {
+        private readonly SharedQueue<T> queue;
+        private T current;
+
+        public SharedQueueEnumerator(SharedQueue<T> q)
+        {
+            queue = q;
+            current = default;
+        }
+
+        public void Dispose()
+        {
+            // Nothing to do here...
+        }
+
+        public T Current
+        {
+            get
+            {
+                if (current == null)
+                    throw new InvalidOperationException();
+                return current;
+            }
+        }
+
+        object IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            try
+            {
+                current = queue.Dequeue();
+                return true;
+            }
+            catch (EndOfStreamException)
+            {
+                current = default;
+                return false;
+            }
+        }
+
+        public void Reset() => throw new InvalidOperationException(
+            "SharedQueue.Reset() does not make sense");
     }
 }
